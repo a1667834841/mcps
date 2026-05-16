@@ -1,0 +1,61 @@
+# ===== Node.js =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.yarn/
+.pnp.*
+
+# ===== 构建产物 =====
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# install-skill 发布产物：prepublishOnly 从 skills/ 同步到包内 skill/
+database/skill/
+ssh_log/skill/
+
+# ===== 环境变量 / 敏感配置 =====
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# ssh_log 实际配置（含明文密码），仅保留 example
+ssh_log/config.yaml
+
+# ===== 日志 =====
+logs/
+*.log
+
+# ===== IDE / 编辑器 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Qoder
+.qoder/
+
+# ===== 操作系统 =====
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===== 测试 / 覆盖率 =====
+coverage/
+.nyc_output/
+*.lcov
+
+# ===== 缓存 =====
+.cache/
+.temp/
+.tmp/
+*.tgz

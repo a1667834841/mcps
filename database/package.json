@@ -1,0 +1,62 @@
+{
+  "name": "@ggball/mcp-database",
+  "version": "2.0.3",
+  "description": "Multi-database MCP Server - Connect and query SQL Server, MySQL, and OceanBase via MCP",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-database": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "skill/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc && node dist/index.js",
+    "start": "node dist/index.js",
+    "watch": "tsc --watch",
+    "sync-skill": "node scripts/sync-skill.mjs",
+    "test": "npx tsx tests/test-mcp-methods.ts",
+    "test:sqlserver": "npx tsx tests/test-mcp-methods-sqlserver.ts",
+    "test:mysql": "npx tsx tests/test-mysql.ts",
+    "test:oceanbase": "npx tsx tests/test-oceanbase.ts",
+    "prepublishOnly": "npm run sync-skill && npm run build",
+    "version": "git add . && git commit -m \"chore: bump version to %s\"",
+    "postversion": "git push --follow-tags"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "sqlserver",
+    "mssql",
+    "mysql",
+    "oceanbase",
+    "database",
+    "multi-database"
+  ],
+  "author": "ggball",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a1667834841/mcp-sqlserver.git"
+  },
+  "homepage": "https://github.com/a1667834841/mcp-sqlserver#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "dotenv": "^16.4.7",
+    "mysql2": "^3.11.5",
+    "tedious": "^18.6.1",
+    "zod": "^4.0.0-rc.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

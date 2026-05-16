@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# skill 目录由 prepublishOnly 从 ../skills/mcp-database 同步生成
+skill/
+
+# Logs
+*.log
+
+# Environment files (keep secrets safe)
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Archive files
+*.tgz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+tests/*.js
+tests/*.d.ts
+tests/*.js.map
+
+# Source maps
+*.map
+
+# Temporary files
+tmp/
+temp/

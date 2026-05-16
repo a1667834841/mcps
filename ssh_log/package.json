@@ -1,0 +1,57 @@
+{
+    "name": "@ggball/mcp-ssh-log",
+    "version": "1.0.1",
+    "description": "MCP Server for viewing and searching remote server logs via SSH",
+    "type": "module",
+    "main": "dist/index.js",
+    "bin": {
+        "mcp-ssh-log": "dist/index.js"
+    },
+    "files": [
+        "dist/**/*",
+        "skill/**/*",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc && node dist/index.js",
+        "start": "node dist/index.js",
+        "watch": "tsc --watch",
+        "sync-skill": "node scripts/sync-skill.mjs",
+        "test": "npx tsx --test tests/test-*.ts",
+        "test:schema": "npx tsx --test tests/test-config-schema.ts",
+        "test:loader": "npx tsx --test tests/test-config-loader.ts",
+        "test:provider": "npx tsx --test tests/test-provider.ts",
+        "test:ssh": "npx tsx --test tests/test-ssh-commands.ts",
+        "prepublishOnly": "npm run sync-skill && npm run build"
+    },
+    "keywords": [
+        "mcp",
+        "ssh",
+        "log",
+        "server"
+    ],
+    "author": "ggball",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/a1667834841/mcp-sqlserver.git"
+    },
+    "homepage": "https://github.com/a1667834841/mcp-sqlserver#readme",
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.4",
+        "ssh2": "^1.15.0",
+        "yaml": "^2.3.4",
+        "zod": "^3.22.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.5",
+        "@types/ssh2": "^1.15.0",
+        "typescript": "^5.7.3",
+        "tsx": "^4.21.0"
+    }
+}
