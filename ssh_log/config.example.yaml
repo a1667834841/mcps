@@ -1,0 +1,35 @@
+# SSH Log MCP Server 配置文件示例
+# 将此文件复制为 config.yaml 并修改为实际配置
+# path 为日志目录路径，工具会自动列出目录中的文件，默认操作最新文件
+
+servers:
+  - id: prod-server-1
+    name: "生产服务器 1"
+    host: "192.168.1.100"
+    port: 22
+    username: "admin"
+    password: "your-password-here"
+    logs:
+      - name: "应用输出日志"
+        service: "user-service"
+        path: "/var/log/user-service/output"
+      - name: "错误日志"
+        service: "user-service"
+        path: "/var/log/user-service/error"
+      - name: "Nginx 访问日志"
+        service: "nginx"
+        path: "/var/log/nginx"
+
+  - id: prod-server-2
+    name: "生产服务器 2"
+    host: "192.168.1.101"
+    port: 22
+    username: "admin"
+    password: "your-password-here"
+    logs:
+      - name: "网关日志"
+        service: "api-gateway"
+        path: "/var/log/api-gateway/output"
+      - name: "订单服务日志"
+        service: "order-service"
+        path: "/var/log/order-service/output"

@@ -1,0 +1,33 @@
+# Source files (only include compiled output)
+src/
+*.ts
+!.ts
+
+# Development files
+.env
+.env.*
+!.env.example
+tests/
+specs/
+.specify/
+.claude/
+.qwen/
+
+# Config files
+tsconfig.json
+.mcp.json
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
