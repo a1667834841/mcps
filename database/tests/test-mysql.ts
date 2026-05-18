@@ -25,17 +25,18 @@ async function test() {
     });
     console.log();
     
-    console.log('3. Listing tables in mysql database...');
-    const tables = await provider.listTables('hems');
+    const dbName = process.env.TEST_DB ?? 'testdb';
+    console.log(`3. Listing tables in ${dbName} database...`);
+    const tables = await provider.listTables(dbName);
     console.log('   Found tables:', tables.length);
     tables.slice(0, 5).forEach(t => {
       console.log(`   - ${t.name} (${t.row_count || 0} rows)`);
     });
     console.log();
     
-    console.log('4. Describing table from hems database...');
+    console.log(`4. Describing table from ${dbName} database...`);
     try {
-      const schema = await provider.describeTable('hems', tables[0]?.name || 'user');
+      const schema = await provider.describeTable(dbName, tables[0]?.name || 'user');
       console.log('   Table:', schema.table);
       console.log('   Columns:', schema.columns.length);
       schema.columns.slice(0, 5).forEach(col => {

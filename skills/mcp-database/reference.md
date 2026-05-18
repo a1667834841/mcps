@@ -22,7 +22,7 @@
     "DB_PORT": "2881",
     "DB_USER": "root",
     "DB_PASSWORD": "***",
-    "DB_DATABASE": "hlzj",
+    "DB_DATABASE": "mydb",
     "DB_CHARSET": "utf8mb4",
     "DB_READONLY": "true",
     "DB_MAX_ROWS": "1000"

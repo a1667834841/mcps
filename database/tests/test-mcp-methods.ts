@@ -31,7 +31,7 @@ async function testAllMethods() {
 
     // 3. List tables
     console.log('3. Testing list_tables...');
-    const dbName = 'hlzj';
+    const dbName = process.env.TEST_DB ?? 'testdb';
     console.log(`   Listing tables in database: ${dbName}`);
     const tables = await provider.listTables(dbName);
     console.log(`   Found ${tables.length} tables:`);

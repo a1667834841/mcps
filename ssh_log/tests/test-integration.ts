@@ -1,11 +1,18 @@
 /**
  * 集成测试 - 连接真实服务器测试 5 个 MCP 工具
- * 服务器: 芜湖二院测试服务器 (10.20.1.25)
- * path 为日志目录，工具自动读取最新文件
+ *
+ * 运行前请准备：
+ *   1) 拷贝 config.example.yaml 为 config.yaml 并填好真实服务器信息
+ *   2) 通过环境变量指定测试目标：
+ *      - TEST_SERVER_ID  ：config.yaml 中的 server id（默认: test-server）
+ *      - TEST_LOG_DIR    ：服务器上的日志目录（默认: /var/log）
  */
 import { loadConfig } from '../src/config/index.js';
 import { createProvider } from '../src/providers/index.js';
 import { SSHConnectionManager, viewLog, searchLog, listLogFiles, getLatestLogFile } from '../src/ssh/index.js';
+
+const TEST_SERVER_ID = process.env.TEST_SERVER_ID ?? 'test-server';
+const LOG_DIR = process.env.TEST_LOG_DIR ?? '/var/log';
 
 async function runIntegrationTest() {
   console.log('=== SSH Log MCP 集成测试 ===\n');
@@ -29,13 +36,11 @@ async function runIntegrationTest() {
   console.log(JSON.stringify(logs, null, 2));
   console.log(`✓ 共 ${logs.length} 个日志目录\n`);
 
-  const serverConfig = provider.getServerConfig('wuhu-eryuan');
+  const serverConfig = provider.getServerConfig(TEST_SERVER_ID);
   if (!serverConfig) {
-    console.error('✗ 未找到服务器配置');
+    console.error(`✗ 未找到服务器配置: ${TEST_SERVER_ID}`);
     process.exit(1);
   }
-
-  const LOG_DIR = '/opt/hems/server/hlzj_qinghuafuyi/logs/output';
 
   // 4. list_log_files
   console.log('【4】测试 list_log_files...');
