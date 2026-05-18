@@ -1,6 +1,6 @@
 {
   "name": "@ggball/mcp-database",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Multi-database MCP Server - Connect and query SQL Server, MySQL, and OceanBase via MCP",
   "type": "module",
   "main": "dist/index.js",

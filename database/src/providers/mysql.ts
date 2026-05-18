@@ -1,27 +1,20 @@
 /**
  * MySQL Database Provider
- * 
+ *
  * Implements DatabaseProvider interface for MySQL
  */
 
-import mysql, { Pool, RowDataPacket, FieldPacket } from 'mysql2/promise';
-import { DatabaseProvider } from './base.js';
-import { MySqlConfig, getMySqlConfig } from '../config/mysql.js';
-import { getSafetyConfig } from '../config/base.js';
-import {
-  DatabaseInfo,
-  TableInfo,
-  TableSchema,
-  IndexInfo,
-  TableStats,
-  QueryResult,
-  ColumnInfo,
-} from '../types/index.js';
+import mysql, { Pool, RowDataPacket, FieldPacket } from "mysql2/promise";
+import { DatabaseProvider } from "./base.js";
+import { MySqlConfig, getMySqlConfig } from "../config/mysql.js";
+import { getSafetyConfig } from "../config/base.js";
+import { DatabaseInfo, TableInfo, TableSchema, IndexInfo, TableStats, QueryResult, ColumnInfo } from "../types/index.js";
 
 export class MySqlProvider extends DatabaseProvider {
-  readonly dbType = 'mysql';
+  readonly dbType = "mysql";
 
-  private pool: Pool | null = null;
+  // 改为按 database 缓存 pool
+  private pools: Map<string, Pool> = new Map();
   private config: MySqlConfig;
 
   constructor(config?: MySqlConfig) {
@@ -43,11 +36,16 @@ export class MySqlProvider extends DatabaseProvider {
   }
 
   private async getPool(database?: string): Promise<Pool> {
-    if (!this.pool) {
-      const config = this.createPoolConfig(database);
-      this.pool = mysql.createPool(config);
+    const db = database || this.config.database;
+    const key = db;
+
+    if (!this.pools.has(key)) {
+      const config = this.createPoolConfig(db);
+      const pool = mysql.createPool(config);
+      this.pools.set(key, pool);
     }
-    return this.pool;
+
+    return this.pools.get(key)!;
   }
 
   /**
@@ -103,7 +101,7 @@ export class MySqlProvider extends DatabaseProvider {
    */
   async listDatabases(): Promise<DatabaseInfo[]> {
     const result = await this.executeQuery(`
-      SELECT schema_name AS name, 
+      SELECT schema_name AS name,
              DEFAULT_CHARACTER_SET_NAME AS charset,
              DEFAULT_COLLATION_NAME AS collation
       FROM information_schema.SCHEMATA
@@ -121,10 +119,11 @@ export class MySqlProvider extends DatabaseProvider {
   /**
    * List all tables in a database
    */
-  async listTables(database: string, schema = 'dbo'): Promise<TableInfo[]> {
+  async listTables(database: string, schema = "dbo"): Promise<TableInfo[]> {
     // In MySQL, schema is equivalent to database, so we use the database parameter
     // The schema parameter is kept for interface compatibility but not used
-    const result = await this.executeQuery(`
+    const result = await this.executeQuery(
+      `
       SELECT t.table_name AS table_name,
              t.table_schema AS schema_name,
              t.table_rows AS row_count
@@ -132,7 +131,9 @@ export class MySqlProvider extends DatabaseProvider {
       WHERE t.table_schema = '${database.replace(/'/g, "''")}'
         AND t.table_type = 'BASE TABLE'
       ORDER BY t.table_name
-    `, database);
+    `,
+      database,
+    );
 
     return result.rows.map((row: any) => ({
       name: row.table_name as string,
@@ -144,23 +145,44 @@ export class MySqlProvider extends DatabaseProvider {
   /**
    * Get table structure information
    */
-  async describeTable(database: string, table: string, schema = 'dbo'): Promise<TableSchema> {
+  async describeTable(database: string, table: string, schema = "dbo"): Promise<TableSchema> {
     // Get column information
-    const columnResult = await this.executeQuery(`
-      SELECT c.column_name AS \`name\`,
-             c.ordinal_position AS \`position\`,
-             c.data_type AS \`data_type\`,
-             c.character_maximum_length AS \`max_length\`,
-             c.numeric_precision AS \`precision_val\`,
-             c.numeric_scale AS \`scale_val\`,
-             CASE WHEN c.is_nullable = 'YES' THEN 1 ELSE 0 END AS \`is_nullable\`,
-             CASE WHEN c.extra = 'auto_increment' THEN 1 ELSE 0 END AS \`is_identity\`,
-             c.column_default AS \`default_value\`
+    const columnResult = await this.executeQuery(
+      `
+      SELECT c.column_name AS ` +
+        "`name`" +
+        `,
+             c.ordinal_position AS ` +
+        "`position`" +
+        `,
+             c.data_type AS ` +
+        "`data_type`" +
+        `,
+             c.character_maximum_length AS ` +
+        "`max_length`" +
+        `,
+             c.numeric_precision AS ` +
+        "`precision_val`" +
+        `,
+             c.numeric_scale AS ` +
+        "`scale_val`" +
+        `,
+             CASE WHEN c.is_nullable = 'YES' THEN 1 ELSE 0 END AS ` +
+        "`is_nullable`" +
+        `,
+             CASE WHEN c.extra = 'auto_increment' THEN 1 ELSE 0 END AS ` +
+        "`is_identity`" +
+        `,
+             c.column_default AS ` +
+        "`default_value`" +
+        `
       FROM information_schema.columns c
       WHERE c.table_schema = '${database.replace(/'/g, "''")}'
         AND c.table_name = '${table.replace(/'/g, "''")}'
       ORDER BY c.ordinal_position
-    `, database);
+    `,
+      database,
+    );
 
     const columns: ColumnInfo[] = columnResult.rows.map((row: any) => ({
       name: row.name as string,
@@ -175,17 +197,20 @@ export class MySqlProvider extends DatabaseProvider {
     }));
 
     // Get primary key information
-    const pkResult = await this.executeQuery(`
+    const pkResult = await this.executeQuery(
+      `
       SELECT k.column_name AS name
       FROM information_schema.key_column_usage k
-      INNER JOIN information_schema.table_constraints t 
-        ON k.constraint_name = t.constraint_name 
+      INNER JOIN information_schema.table_constraints t
+        ON k.constraint_name = t.constraint_name
         AND k.table_schema = t.table_schema
       WHERE k.table_schema = '${database.replace(/'/g, "''")}'
         AND k.table_name = '${table.replace(/'/g, "''")}'
         AND t.constraint_type = 'PRIMARY KEY'
       ORDER BY k.ordinal_position
-    `, database);
+    `,
+      database,
+    );
 
     const primaryKeys = pkResult.rows.map((row: any) => row.name as string);
 
@@ -199,11 +224,12 @@ export class MySqlProvider extends DatabaseProvider {
   /**
    * Get index information for a table
    */
-  async getTableIndexes(database: string, table: string, schema = 'dbo'): Promise<IndexInfo[]> {
-    const result = await this.executeQuery(`
-      SELECT 
+  async getTableIndexes(database: string, table: string, schema = "dbo"): Promise<IndexInfo[]> {
+    const result = await this.executeQuery(
+      `
+      SELECT
         i.index_name AS name,
-        CASE 
+        CASE
           WHEN i.index_type = 'FULLTEXT' THEN 'FULLTEXT'
           WHEN i.index_type = 'SPATIAL' THEN 'SPATIAL'
           ELSE 'BTREE'
@@ -218,7 +244,9 @@ export class MySqlProvider extends DatabaseProvider {
       GROUP BY i.index_name, i.non_unique, i.index_type
       HAVING i.index_name != 'PRIMARY'
       ORDER BY i.index_name
-    `, database);
+    `,
+      database,
+    );
 
     return result.rows.map((row: any) => ({
       name: row.name as string,
@@ -233,33 +261,39 @@ export class MySqlProvider extends DatabaseProvider {
   /**
    * Get table statistics
    */
-  async getTableStats(database: string, table: string, schema = 'dbo'): Promise<TableStats> {
+  async getTableStats(database: string, table: string, schema = "dbo"): Promise<TableStats> {
     // Get row count and size information
-    const result = await this.executeQuery(`
-      SELECT 
+    const result = await this.executeQuery(
+      `
+      SELECT
         t.table_name AS table_name,
         t.table_rows AS row_count,
         ROUND((t.data_length + t.index_length) / 1024 / 1024, 2) AS size_mb
       FROM information_schema.tables t
       WHERE t.table_schema = '${database.replace(/'/g, "''")}'
         AND t.table_name = '${table.replace(/'/g, "''")}'
-    `, database);
+    `,
+      database,
+    );
 
     const statsData = result.rows[0] || { row_count: 0, size_mb: 0 };
 
     // Get accurate row count
-    const countResult = await this.executeQuery(`
+    const countResult = await this.executeQuery(
+      `
       SELECT COUNT(*) AS row_count
       FROM \`${table}\`
-    `, database);
+    `,
+      database,
+    );
 
-    const accurateCount = countResult.rows[0]?.row_count as number || 0;
+    const accurateCount = (countResult.rows[0]?.row_count as number) || 0;
 
     return {
       table: table,
       row_count: accurateCount,
-      total_rows_estimated: statsData.row_count as number || 0,
-      size_mb: statsData.size_mb as number || 0,
+      total_rows_estimated: (statsData.row_count as number) || 0,
+      size_mb: (statsData.size_mb as number) || 0,
     };
   }
 
@@ -267,9 +301,13 @@ export class MySqlProvider extends DatabaseProvider {
    * Close all connections
    */
   async close(): Promise<void> {
-    if (this.pool) {
-      await this.pool.end();
-      this.pool = null;
+    for (const pool of this.pools.values()) {
+      try {
+        await pool.end();
+      } catch (err) {
+        // Ignore
+      }
     }
+    this.pools.clear();
   }
 }

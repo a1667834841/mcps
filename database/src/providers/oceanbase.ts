@@ -1,28 +1,21 @@
 /**
  * OceanBase Database Provider
- * 
+ *
  * Implements DatabaseProvider interface for OceanBase (MySQL compatible)
  * Uses same mysql2 driver as MySQL but with OceanBase-specific SQL adaptations
  */
 
-import mysql, { Pool, RowDataPacket, FieldPacket } from 'mysql2/promise';
-import { DatabaseProvider } from './base.js';
-import { getOceanBaseConfig, OceanBaseConfig } from '../config/oceanbase.js';
-import { getSafetyConfig } from '../config/base.js';
-import {
-  DatabaseInfo,
-  TableInfo,
-  TableSchema,
-  IndexInfo,
-  TableStats,
-  QueryResult,
-  ColumnInfo,
-} from '../types/index.js';
+import mysql, { Pool, RowDataPacket, FieldPacket } from "mysql2/promise";
+import { DatabaseProvider } from "./base.js";
+import { getOceanBaseConfig, OceanBaseConfig } from "../config/oceanbase.js";
+import { getSafetyConfig } from "../config/base.js";
+import { DatabaseInfo, TableInfo, TableSchema, IndexInfo, TableStats, QueryResult, ColumnInfo } from "../types/index.js";
 
 export class OceanBaseProvider extends DatabaseProvider {
-  readonly dbType = 'oceanbase';
+  readonly dbType = "oceanbase";
 
-  private pool: Pool | null = null;
+  // 改为按 database 缓存 pool
+  private pools: Map<string, Pool> = new Map();
   private obConfig: OceanBaseConfig;
 
   constructor(config?: OceanBaseConfig) {
@@ -44,17 +37,24 @@ export class OceanBaseProvider extends DatabaseProvider {
   }
 
   private async getPool(database?: string): Promise<Pool> {
-    if (!this.pool) {
-      const config = this.createPoolConfig(database);
-      this.pool = mysql.createPool(config);
+    const db = database || this.obConfig.database;
+    const key = db;
+
+    if (!this.pools.has(key)) {
+      const config = this.createPoolConfig(db);
+      const pool = mysql.createPool(config);
+      this.pools.set(key, pool);
     }
-    return this.pool;
+
+    // 非空断言保证返回值
+    return this.pools.get(key)!;
   }
 
   /**
    * Connect to OceanBase
    */
   async connect(): Promise<void> {
+    // 验证默认库的连接
     const pool = await this.getPool();
     const connection = await pool.getConnection();
     await connection.ping();
@@ -121,8 +121,9 @@ export class OceanBaseProvider extends DatabaseProvider {
   /**
    * List all tables in a database
    */
-  async listTables(database: string, schema = 'dbo'): Promise<TableInfo[]> {
-    const result = await this.executeQuery(`
+  async listTables(database: string, schema = "dbo"): Promise<TableInfo[]> {
+    const result = await this.executeQuery(
+      `
       SELECT t.table_name AS table_name,
              t.table_schema AS schema_name,
              t.table_rows AS row_count
@@ -130,7 +131,9 @@ export class OceanBaseProvider extends DatabaseProvider {
       WHERE t.table_schema = '${database.replace(/'/g, "''")}'
         AND t.table_type = 'BASE TABLE'
       ORDER BY t.table_name
-    `, database);
+    `,
+      database,
+    );
 
     return result.rows.map((row: any) => ({
       name: row.table_name as string,
@@ -143,8 +146,9 @@ export class OceanBaseProvider extends DatabaseProvider {
    * Get table structure information
    * Uses column aliases to avoid reserved word conflicts in OceanBase
    */
-  async describeTable(database: string, table: string, schema = 'dbo'): Promise<TableSchema> {
-    const columnResult = await this.executeQuery(`
+  async describeTable(database: string, table: string, schema = "dbo"): Promise<TableSchema> {
+    const columnResult = await this.executeQuery(
+      `
       SELECT c.column_name AS col_name,
              c.ordinal_position AS col_position,
              c.data_type AS col_data_type,
@@ -158,7 +162,9 @@ export class OceanBaseProvider extends DatabaseProvider {
       WHERE c.table_schema = '${database.replace(/'/g, "''")}'
         AND c.table_name = '${table.replace(/'/g, "''")}'
       ORDER BY c.ordinal_position
-    `, database);
+    `,
+      database,
+    );
 
     const columns: ColumnInfo[] = columnResult.rows.map((row: any) => ({
       name: row.col_name as string,
@@ -173,17 +179,20 @@ export class OceanBaseProvider extends DatabaseProvider {
     }));
 
     // Use DISTINCT to handle OceanBase returning duplicate primary key rows
-    const pkResult = await this.executeQuery(`
+    const pkResult = await this.executeQuery(
+      `
       SELECT DISTINCT k.column_name AS pk_column
       FROM information_schema.key_column_usage k
-      INNER JOIN information_schema.table_constraints t 
-        ON k.constraint_name = t.constraint_name 
+      INNER JOIN information_schema.table_constraints t
+        ON k.constraint_name = t.constraint_name
         AND k.table_schema = t.table_schema
       WHERE k.table_schema = '${database.replace(/'/g, "''")}'
         AND k.table_name = '${table.replace(/'/g, "''")}'
         AND t.constraint_type = 'PRIMARY KEY'
       ORDER BY k.ordinal_position
-    `, database);
+    `,
+      database,
+    );
 
     const primaryKeys = pkResult.rows.map((row: any) => row.pk_column as string);
 
@@ -197,8 +206,9 @@ export class OceanBaseProvider extends DatabaseProvider {
   /**
    * Get index information for a table
    */
-  async getTableIndexes(database: string, table: string, schema = 'dbo'): Promise<IndexInfo[]> {
-    const result = await this.executeQuery(`
+  async getTableIndexes(database: string, table: string, schema = "dbo"): Promise<IndexInfo[]> {
+    const result = await this.executeQuery(
+      `
       SELECT DISTINCT
         i.index_name AS idx_name,
         CASE
@@ -216,7 +226,9 @@ export class OceanBaseProvider extends DatabaseProvider {
       GROUP BY i.index_name, i.non_unique, i.index_type
       HAVING i.index_name != 'PRIMARY'
       ORDER BY i.index_name
-    `, database);
+    `,
+      database,
+    );
 
     return result.rows.map((row: any) => ({
       name: row.idx_name as string,
@@ -231,8 +243,9 @@ export class OceanBaseProvider extends DatabaseProvider {
   /**
    * Get table statistics
    */
-  async getTableStats(database: string, table: string, schema = 'dbo'): Promise<TableStats> {
-    const result = await this.executeQuery(`
+  async getTableStats(database: string, table: string, schema = "dbo"): Promise<TableStats> {
+    const result = await this.executeQuery(
+      `
       SELECT
         t.table_name AS tbl_name,
         t.table_rows AS tbl_row_count,
@@ -240,22 +253,27 @@ export class OceanBaseProvider extends DatabaseProvider {
       FROM information_schema.tables t
       WHERE t.table_schema = '${database.replace(/'/g, "''")}'
         AND t.table_name = '${table.replace(/'/g, "''")}'
-    `, database);
+    `,
+      database,
+    );
 
     const statsData = result.rows[0] || { tbl_row_count: 0, tbl_size_mb: 0 };
 
-    const countResult = await this.executeQuery(`
+    const countResult = await this.executeQuery(
+      `
       SELECT COUNT(*) AS cnt
       FROM \`${table}\`
-    `, database);
+    `,
+      database,
+    );
 
-    const accurateCount = countResult.rows[0]?.cnt as number || 0;
+    const accurateCount = (countResult.rows[0]?.cnt as number) || 0;
 
     return {
       table: table,
       row_count: accurateCount,
-      total_rows_estimated: statsData.tbl_row_count as number || 0,
-      size_mb: statsData.tbl_size_mb as number || 0,
+      total_rows_estimated: (statsData.tbl_row_count as number) || 0,
+      size_mb: (statsData.tbl_size_mb as number) || 0,
     };
   }
 
@@ -263,9 +281,13 @@ export class OceanBaseProvider extends DatabaseProvider {
    * Close all connections
    */
   async close(): Promise<void> {
-    if (this.pool) {
-      await this.pool.end();
-      this.pool = null;
+    for (const pool of this.pools.values()) {
+      try {
+        await pool.end();
+      } catch (err) {
+        // 忽略关闭错误
+      }
     }
+    this.pools.clear();
   }
 }
