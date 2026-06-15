@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'database/package.json' # 仅版本号变更时触发
+      - 'database/package.json' # 版本号变更时自动触发
+  workflow_dispatch: {} # 支持从 GitHub Actions 页面手动触发
 
 jobs:
   test:
