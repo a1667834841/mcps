@@ -37,8 +37,8 @@ New-Item -ItemType Directory -Force -Path $sshDir | Out-Null
 
 $files = @("SKILL.md", "reference.md")
 foreach ($f in $files) {
-    Invoke-WebRequest -Uri "$RawBase/skills/mcp-database/$f" -OutFile (Join-Path $dbDir $f)
-    Invoke-WebRequest -Uri "$RawBase/skills/mcp-ssh-log/$f"   -OutFile (Join-Path $sshDir $f)
+    Invoke-WebRequest -Uri "$RawBase/scripts/skills/mcp-database/$f" -OutFile (Join-Path $dbDir $f)
+    Invoke-WebRequest -Uri "$RawBase/scripts/skills/mcp-ssh-log/$f"   -OutFile (Join-Path $sshDir $f)
 }
 
 Write-Host ""

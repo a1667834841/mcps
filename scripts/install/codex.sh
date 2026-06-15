@@ -2,10 +2,10 @@
 set -euo pipefail
 
 RAW_BASE="https://raw.githubusercontent.com/a1667834841/mcps/main"
-SKILL_DIR="${1:-$HOME/.config/opencode/agent}"
+SKILL_DIR="${1:-./skills}"
 
 echo "==========================================="
-echo "  MCP Tools Installer for OpenCode"
+echo "  MCP Tools Installer for Codex CLI"
 echo "==========================================="
 echo ""
 
@@ -30,8 +30,8 @@ echo "[2/2] Downloading skills -> ${SKILL_DIR}/"
 mkdir -p "${SKILL_DIR}/mcp-database" "${SKILL_DIR}/mcp-ssh-log"
 
 for f in SKILL.md reference.md; do
-  curl -fsSL "${RAW_BASE}/skills/mcp-database/${f}" -o "${SKILL_DIR}/mcp-database/${f}"
-  curl -fsSL "${RAW_BASE}/skills/mcp-ssh-log/${f}"   -o "${SKILL_DIR}/mcp-ssh-log/${f}"
+  curl -fsSL "${RAW_BASE}/scripts/skills/mcp-database/${f}" -o "${SKILL_DIR}/mcp-database/${f}"
+  curl -fsSL "${RAW_BASE}/scripts/skills/mcp-ssh-log/${f}"   -o "${SKILL_DIR}/mcp-ssh-log/${f}"
 done
 
 echo ""
@@ -39,39 +39,36 @@ echo "==========================================="
 echo "  Install complete!"
 echo "==========================================="
 echo ""
-echo "Skills installed to: ${SKILL_DIR}/"
+echo "Skills downloaded to: ${SKILL_DIR}/"
+echo ""
+echo "Codex CLI does not have a global skill directory."
+echo "Merge the key points from SKILL.md files into your project's AGENTS.md,"
+echo "or keep them as reference in ${SKILL_DIR}/."
 echo ""
 echo "Next step: configure MCP servers."
-echo "Add the following to ~/.config/opencode/opencode.json (global) or opencode.json (project):"
+echo "Add the following to ~/.codex/config.toml:"
 echo ""
 echo '--- cut begin ---'
 cat <<'CONFIG'
-{
-  "mcp": {
-    "<your-db-id>": {
-      "type": "local",
-      "command": ["mcp-database"],
-      "environment": {
-        "DB_TYPE": "oceanbase",
-        "DB_HOST": "<your-host>",
-        "DB_PORT": "2881",
-        "DB_USER": "<user>",
-        "DB_PASSWORD": "<password>",
-        "DB_DATABASE": "<database>",
-        "DB_CHARSET": "utf8mb4",
-        "DB_READONLY": "true",
-        "DB_MAX_ROWS": "1000"
-      }
-    },
-    "ssh-log": {
-      "type": "local",
-      "command": ["mcp-ssh-log"],
-      "environment": {
-        "SSH_LOG_CONFIG": "<absolute-path-to-config.yaml>"
-      }
-    }
-  }
-}
+[mcp_servers.<your-db-id>]
+command = "mcp-database"
+
+[mcp_servers.<your-db-id>.env]
+DB_TYPE = "oceanbase"
+DB_HOST = "<your-host>"
+DB_PORT = "2881"
+DB_USER = "<user>"
+DB_PASSWORD = "<password>"
+DB_DATABASE = "<database>"
+DB_CHARSET = "utf8mb4"
+DB_READONLY = "true"
+DB_MAX_ROWS = "1000"
+
+[mcp_servers.ssh-log]
+command = "mcp-ssh-log"
+
+[mcp_servers.ssh-log.env]
+SSH_LOG_CONFIG = "<absolute-path-to-config.yaml>"
 CONFIG
 echo '--- cut end ---'
 echo ""

@@ -59,8 +59,8 @@
 
 | Skill 目录                       | 作用                                                                                             |
 | -------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [`skills/mcp-database/`](./skills/mcp-database) | 教 Agent 何时、如何调用 database MCP（工具用法、server 选择规则、安全规范）       |
-| [`skills/mcp-ssh-log/`](./skills/mcp-ssh-log)   | 教 Agent 何时、如何调用 ssh-log MCP（标准排查工作流、参数边界、常见踩坑）         |
+| [`scripts/skills/mcp-database/`](./scripts/skills/mcp-database) | 教 Agent 何时、如何调用 database MCP（工具用法、server 选择规则、安全规范）       |
+| [`scripts/skills/mcp-ssh-log/`](./scripts/skills/mcp-ssh-log)   | 教 Agent 何时、如何调用 ssh-log MCP（标准排查工作流、参数边界、常见踩坑）         |
 
 Skill 会随一键脚本自动下载到本地，无需手动处理。
 
@@ -77,13 +77,13 @@ Skill 会随一键脚本自动下载到本地，无需手动处理。
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/install/claude.sh | bash
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/install/claude.sh | bash
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/claude.ps1 | iex
+irm https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/install/claude.ps1 | iex
 ```
 
 > Skill 默认安装到 `~/.claude/skills/`，可传参自定义：`curl ... | bash -s -- /your/path`
@@ -93,13 +93,13 @@ irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/claude.ps1 |
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/install/codex.sh | bash
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/install/codex.sh | bash
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/codex.ps1 | iex
+irm https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/install/codex.ps1 | iex
 ```
 
 > Skill 默认下载到当前目录 `./skills/`，可传参自定义：`curl ... | bash -s -- /your/path`
@@ -111,13 +111,13 @@ irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/codex.ps1 | 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/install/opencode.sh | bash
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/install/opencode.sh | bash
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/opencode.ps1 | iex
+irm https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/install/opencode.ps1 | iex
 ```
 
 > Skill 默认安装到 `~/.config/opencode/agent/`，可传参自定义：`curl ... | bash -s -- /your/path`
@@ -229,11 +229,11 @@ SSH_LOG_CONFIG = "<config.yaml 绝对路径>"
 npm i -g @ggball/mcp-database @ggball/mcp-ssh-log
 
 # 2. 下载 Skill（从 GitHub）
-mkdir -p skills/mcp-database skills/mcp-ssh-log
-curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-database/SKILL.md      -o skills/mcp-database/SKILL.md
-curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-database/reference.md  -o skills/mcp-database/reference.md
-curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-ssh-log/SKILL.md       -o skills/mcp-ssh-log/SKILL.md
-curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-ssh-log/reference.md   -o skills/mcp-ssh-log/reference.md
+mkdir -p scripts/skills/mcp-database scripts/skills/mcp-ssh-log
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/skills/mcp-database/SKILL.md      -o scripts/skills/mcp-database/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/skills/mcp-database/reference.md  -o scripts/skills/mcp-database/reference.md
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/skills/mcp-ssh-log/SKILL.md       -o scripts/skills/mcp-ssh-log/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/scripts/skills/mcp-ssh-log/reference.md   -o scripts/skills/mcp-ssh-log/reference.md
 ```
 
 ---

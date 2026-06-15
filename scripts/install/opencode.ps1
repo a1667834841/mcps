@@ -1,10 +1,10 @@
 $ErrorActionPreference = "Stop"
 
 $RawBase = "https://raw.githubusercontent.com/a1667834841/mcps/main"
-$SkillDir = if ($args[0]) { $args[0] } else { Join-Path $env:USERPROFILE ".claude\skills" }
+$SkillDir = if ($args[0]) { $args[0] } else { Join-Path $env:USERPROFILE ".config\opencode\agent" }
 
 Write-Host "==========================================="
-Write-Host "  MCP Tools Installer for Claude Code"
+Write-Host "  MCP Tools Installer for OpenCode"
 Write-Host "==========================================="
 Write-Host ""
 
@@ -37,8 +37,8 @@ New-Item -ItemType Directory -Force -Path $sshDir | Out-Null
 
 $files = @("SKILL.md", "reference.md")
 foreach ($f in $files) {
-    Invoke-WebRequest -Uri "$RawBase/skills/mcp-database/$f" -OutFile (Join-Path $dbDir $f)
-    Invoke-WebRequest -Uri "$RawBase/skills/mcp-ssh-log/$f"   -OutFile (Join-Path $sshDir $f)
+    Invoke-WebRequest -Uri "$RawBase/scripts/skills/mcp-database/$f" -OutFile (Join-Path $dbDir $f)
+    Invoke-WebRequest -Uri "$RawBase/scripts/skills/mcp-ssh-log/$f"   -OutFile (Join-Path $sshDir $f)
 }
 
 Write-Host ""
@@ -49,15 +49,16 @@ Write-Host ""
 Write-Host "Skills installed to: $SkillDir\"
 Write-Host ""
 Write-Host "Next step: configure MCP servers."
-Write-Host "Add the following to %USERPROFILE%\.claude.json (global) or .mcp.json (project):"
+Write-Host "Add the following to $env:USERPROFILE\.config\opencode\opencode.json (global) or opencode.json (project):"
 Write-Host ""
 Write-Host "--- cut begin ---"
 Write-Host @'
 {
-  "mcpServers": {
+  "mcp": {
     "<your-db-id>": {
-      "command": "mcp-database",
-      "env": {
+      "type": "local",
+      "command": ["mcp-database"],
+      "environment": {
         "DB_TYPE": "oceanbase",
         "DB_HOST": "<your-host>",
         "DB_PORT": "2881",
@@ -70,8 +71,9 @@ Write-Host @'
       }
     },
     "ssh-log": {
-      "command": "mcp-ssh-log",
-      "env": {
+      "type": "local",
+      "command": ["mcp-ssh-log"],
+      "environment": {
         "SSH_LOG_CONFIG": "<absolute-path-to-config.yaml>"
       }
     }

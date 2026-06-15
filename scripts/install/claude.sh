@@ -30,8 +30,8 @@ echo "[2/2] Downloading skills -> ${SKILL_DIR}/"
 mkdir -p "${SKILL_DIR}/mcp-database" "${SKILL_DIR}/mcp-ssh-log"
 
 for f in SKILL.md reference.md; do
-  curl -fsSL "${RAW_BASE}/skills/mcp-database/${f}" -o "${SKILL_DIR}/mcp-database/${f}"
-  curl -fsSL "${RAW_BASE}/skills/mcp-ssh-log/${f}"   -o "${SKILL_DIR}/mcp-ssh-log/${f}"
+  curl -fsSL "${RAW_BASE}/scripts/skills/mcp-database/${f}" -o "${SKILL_DIR}/mcp-database/${f}"
+  curl -fsSL "${RAW_BASE}/scripts/skills/mcp-ssh-log/${f}"   -o "${SKILL_DIR}/mcp-ssh-log/${f}"
 done
 
 echo ""
