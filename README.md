@@ -1,107 +1,249 @@
 # mcps
 
-通用 MCP 工具集，包含两个开箱即用的 MCP Server 与配套的 Skill：
+通用 MCP 工具集合 — 把常用的运维 / 数据访问能力封装成标准化的 MCP Server，让 AI Agent（Claude Code、Codex CLI、OpenCode 等）可以直接调用。
 
-| 模块                      | npm 包                                                                       | 作用                                                                                                                           |
-| ------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| [`database/`](./database) | [`@ggball/mcp-database`](https://www.npmjs.com/package/@ggball/mcp-database) | 通过 MCP 访问 SQL Server / MySQL / OceanBase，支持 list_databases、list_tables、describe_table、execute_query 等工具，默认只读 |
-| [`ssh_log/`](./ssh_log)   | [`@ggball/mcp-ssh-log`](https://www.npmjs.com/package/@ggball/mcp-ssh-log)   | 通过 SSH 远程查看 / 搜索应用日志（tail、head、grep + 上下文），按 yaml 配置集中管理服务器与日志目录                            |
-| [`skills/`](./skills)     | —                                                                            | 配套 Skill：教 Agent 何时、如何调用上述两个 MCP（包含工具用法、server 选择规则、安全规范、排查工作流）                         |
+每个 MCP 都是独立的 npm 包，可按需单独安装，也可以用一键脚本全部装好。
 
 ---
 
-## 一句话让 Agent 自动安装
+## MCP 一览
 
-把下面对应平台的整段话直接发给你的 AI Agent，它会自行完成 **包安装 + MCP 注册 + Skill 部署**。复制前请把示例里的数据库、SSH 凭证替换成你自己的环境。
+### 🗄️ `@ggball/mcp-database` — 数据库查询
+
+| 项目       | 值                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------- |
+| npm 包     | [`@ggball/mcp-database`](https://www.npmjs.com/package/@ggball/mcp-database)                        |
+| 源码       | [`database/`](./database)                                                                           |
+| 支持数据库 | **SQL Server** / **MySQL** / **OceanBase**                                                          |
+| 默认行为   | 只读（仅允许 SELECT / SHOW / DESCRIBE / EXPLAIN），单次返回上限 1000 行，内置敏感字段脱敏           |
+
+**提供的工具：**
+
+| 工具                | 用途                               |
+| ------------------- | ---------------------------------- |
+| `list_databases`    | 列出实例上的所有数据库             |
+| `list_tables`       | 列出指定库的所有表                 |
+| `describe_table`    | 获取表结构（字段 / 类型 / 主键等） |
+| `get_table_indexes` | 获取表索引                         |
+| `get_table_stats`   | 获取表统计（行数、占用空间等）     |
+| `execute_query`     | 执行 SQL（默认只读，受行数限制）   |
+
+👉 详细配置、环境变量、使用示例见 [database/README.md](./database/README.md)
+
+---
+
+### 📋 `@ggball/mcp-ssh-log` — SSH 远程日志查看 / 搜索
+
+| 项目     | 值                                                                                              |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| npm 包   | [`@ggball/mcp-ssh-log`](https://www.npmjs.com/package/@ggball/mcp-ssh-log)                      |
+| 源码     | [`ssh_log/`](./ssh_log)                                                                         |
+| 配置方式 | YAML 文件集中管理服务器、服务、日志目录三层结构                                                 |
+| 默认行为 | 自动选取目录中最新日志文件，仅执行只读命令（tail / head / grep / ls / stat）                    |
+
+**提供的工具：**
+
+| 工具             | 用途                                                     |
+| ---------------- | -------------------------------------------------------- |
+| `list_servers`   | 列出所有已配置的服务器                                   |
+| `list_logs`      | 列出日志目录配置，可按 server_id / service 过滤          |
+| `list_log_files` | 列出指定目录下的日志文件（按修改时间倒序）               |
+| `view_log`       | 查看日志内容（head / tail），不传文件名时自动选最新文件  |
+| `search_log`     | 按关键字 / 正则搜索，返回匹配行及前后上下文              |
+
+👉 详细配置、YAML schema、使用示例见 [ssh_log/README.md](./ssh_log/README.md)
+
+---
+
+### 🧠 配套 Skill
+
+| Skill 目录                       | 作用                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ |
+| [`skills/mcp-database/`](./skills/mcp-database) | 教 Agent 何时、如何调用 database MCP（工具用法、server 选择规则、安全规范）       |
+| [`skills/mcp-ssh-log/`](./skills/mcp-ssh-log)   | 教 Agent 何时、如何调用 ssh-log MCP（标准排查工作流、参数边界、常见踩坑）         |
+
+Skill 会随一键脚本自动下载到本地，无需手动处理。
+
+---
+
+## 一键安装
+
+脚本自动完成：**npm 全局安装 MCP 包** + **下载 Skill 文件** + **打印配置模板**。
+
+凭证信息（数据库连接参数、SSH config 路径）需安装后手动填写。
 
 ### 🤖 Claude Code
 
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/install/claude.sh | bash
 ```
-请帮我安装并配置 mcps 工具集：
-1) 全局安装 npm 包：`npm i -g @ggball/mcp-database @ggball/mcp-ssh-log`；
-2) 部署 Skill（包自带，无需克隆仓库）：
-   `mcp-database install-skill ~/.claude/skills && mcp-ssh-log install-skill ~/.claude/skills`；
-3) 在 `~/.claude.json`（或当前项目的 `.mcp.json`）的 `mcpServers` 中追加两个条目：
-   - `<your-db-server-id>`：command=`mcp-database`，env={DB_TYPE:"oceanbase", DB_HOST:"<your-db-host>", DB_PORT:"2881", DB_USER:"<your-user>", DB_PASSWORD:"<your-password>", DB_DATABASE:"<your-database>", DB_CHARSET:"utf8mb4", DB_READONLY:"true", DB_MAX_ROWS:"1000"}
-   - `ssh-log`：command=`mcp-ssh-log`，env={SSH_LOG_CONFIG:"<本地 ssh_log/config.yaml 的绝对路径>"}（参考仓库内 `ssh_log/config.example.yaml` 创建你的 config.yaml）；
-4) 重新加载 MCP，用 `<your-db-server-id>.list_databases` 和 `ssh-log.list_servers` 各调用一次验证连通。失败时打印错误并停下让我处理。
+
+**Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/claude.ps1 | iex
 ```
+
+> Skill 默认安装到 `~/.claude/skills/`，可传参自定义：`curl ... | bash -s -- /your/path`
 
 ### 🤖 Codex CLI（OpenAI Codex）
 
-~~~
-请帮我安装并配置 mcps 工具集：
-1) 全局安装 npm 包：`npm i -g @ggball/mcp-database @ggball/mcp-ssh-log`；
-2) 部署 Skill 并合并到 AGENTS.md（包自带，无需克隆仓库）：先运行
-   `mcp-database install-skill ./tmp-skills && mcp-ssh-log install-skill ./tmp-skills`，
-   然后把 `tmp-skills/mcp-database/SKILL.md` 和 `tmp-skills/mcp-ssh-log/SKILL.md` 的核心要点（server 选择规则、工具列表、安全规范）合并写入项目根目录的 `AGENTS.md`，完成后可删除 `tmp-skills`；
-3) 在 `~/.codex/config.toml` 中追加两个 mcp_server 段：
-   ```toml
-   [mcp_servers.<your-db-server-id>]
-   command = "mcp-database"
-   env = { DB_TYPE = "oceanbase", DB_HOST = "<your-db-host>", DB_PORT = "2881", DB_USER = "<your-user>", DB_PASSWORD = "<your-password>", DB_DATABASE = "<your-database>", DB_CHARSET = "utf8mb4", DB_READONLY = "true", DB_MAX_ROWS = "1000" }
+**macOS / Linux**
 
-   [mcp_servers.ssh-log]
-   command = "mcp-ssh-log"
-   env = { SSH_LOG_CONFIG = "<本地 ssh_log/config.yaml 绝对路径>" }
-   ```
-4) 重启 codex 进程，调用 `<your-db-server-id>.list_databases` 和 `ssh-log.list_servers` 验证。失败时打印错误并停下让我处理。
-~~~
+```bash
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/install/codex.sh | bash
+```
+
+**Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/codex.ps1 | iex
+```
+
+> Skill 默认下载到当前目录 `./skills/`，可传参自定义：`curl ... | bash -s -- /your/path`
+>
+> Codex CLI 无全局 Skill 目录，请将 SKILL.md 要点合并到项目的 `AGENTS.md`。
 
 ### 🤖 OpenCode
 
-~~~
-请帮我安装并配置 mcps 工具集：
-1) 全局安装 npm 包：`npm i -g @ggball/mcp-database @ggball/mcp-ssh-log`；
-2) 部署 Skill（包自带，无需克隆仓库）：
-   `mcp-database install-skill ~/.config/opencode/agent && mcp-ssh-log install-skill ~/.config/opencode/agent`；
-   之后按 OpenCode 的约定把每个 SKILL.md 调整为对应的 agent 描述文件即可；
-3) 在 `~/.config/opencode/opencode.json`（或项目 `opencode.json`）的 `mcp` 字段中追加：
-   ```json
-   "<your-db-server-id>": {
-     "type": "local",
-     "command": ["mcp-database"],
-     "environment": {
-       "DB_TYPE": "oceanbase", "DB_HOST": "<your-db-host>", "DB_PORT": "2881",
-       "DB_USER": "<your-user>", "DB_PASSWORD": "<your-password>",
-       "DB_DATABASE": "<your-database>", "DB_CHARSET": "utf8mb4",
-       "DB_READONLY": "true", "DB_MAX_ROWS": "1000"
-     }
-   },
-   "ssh-log": {
-     "type": "local",
-     "command": ["mcp-ssh-log"],
-     "environment": { "SSH_LOG_CONFIG": "<本地 ssh_log/config.yaml 绝对路径>" }
-   }
-   ```
-4) 重启 opencode，分别调用 `<your-db-server-id>.list_databases` 和 `ssh-log.list_servers` 验证。失败时打印错误并停下让我处理。
-~~~
-
----
-
-## 手动安装 Skill（不克隆仓库）
-
-两个 npm 包都内置了其配套 Skill，全局安装后一行部署：
+**macOS / Linux**
 
 ```bash
-mcp-database install-skill <目标目录>   # 生成 <目标目录>/mcp-database/{SKILL.md,reference.md}
-mcp-ssh-log  install-skill <目标目录>   # 生成 <目标目录>/mcp-ssh-log/{SKILL.md,reference.md}
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/install/opencode.sh | bash
 ```
 
-常用目标目录：Claude Code 用 `~/.claude/skills`；OpenCode 用 `~/.config/opencode/agent`；Codex CLI 可随意存放然后合并到 `AGENTS.md`。
+**Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/a1667834841/mcps/main/install/opencode.ps1 | iex
+```
+
+> Skill 默认安装到 `~/.config/opencode/agent/`，可传参自定义：`curl ... | bash -s -- /your/path`
 
 ---
 
-## 手动配置参考
+## 安装后配置
 
-不想走 Agent 自动化时，直接看：
+脚本执行完毕会打印配置模板，以下是各 Agent 的配置文件位置与格式速查。
 
-- 数据库 MCP：[skills/mcp-database/SKILL.md](./skills/mcp-database/SKILL.md) + [reference.md](./skills/mcp-database/reference.md)
-- SSH 日志 MCP：[skills/mcp-ssh-log/SKILL.md](./skills/mcp-ssh-log/SKILL.md) + [reference.md](./skills/mcp-ssh-log/reference.md)
-- 各模块详细说明：[database/README.md](./database/README.md) ｜ [ssh_log/README.md](./ssh_log/README.md)
+### Claude Code
+
+配置文件：`~/.claude.json`（全局）或项目根目录 `.mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "<your-db-id>": {
+      "command": "mcp-database",
+      "env": {
+        "DB_TYPE": "oceanbase",
+        "DB_HOST": "<your-host>",
+        "DB_PORT": "2881",
+        "DB_USER": "<user>",
+        "DB_PASSWORD": "<password>",
+        "DB_DATABASE": "<database>",
+        "DB_CHARSET": "utf8mb4",
+        "DB_READONLY": "true",
+        "DB_MAX_ROWS": "1000"
+      }
+    },
+    "ssh-log": {
+      "command": "mcp-ssh-log",
+      "env": {
+        "SSH_LOG_CONFIG": "<config.yaml 绝对路径>"
+      }
+    }
+  }
+}
+```
+
+### Codex CLI
+
+配置文件：`~/.codex/config.toml`
+
+```toml
+[mcp_servers.<your-db-id>]
+command = "mcp-database"
+
+[mcp_servers.<your-db-id>.env]
+DB_TYPE = "oceanbase"
+DB_HOST = "<your-host>"
+DB_PORT = "2881"
+DB_USER = "<user>"
+DB_PASSWORD = "<password>"
+DB_DATABASE = "<database>"
+DB_CHARSET = "utf8mb4"
+DB_READONLY = "true"
+DB_MAX_ROWS = "1000"
+
+[mcp_servers.ssh-log]
+command = "mcp-ssh-log"
+
+[mcp_servers.ssh-log.env]
+SSH_LOG_CONFIG = "<config.yaml 绝对路径>"
+```
+
+### OpenCode
+
+配置文件：`~/.config/opencode/opencode.json`（全局）或项目 `opencode.json`
+
+```json
+{
+  "mcp": {
+    "<your-db-id>": {
+      "type": "local",
+      "command": ["mcp-database"],
+      "environment": {
+        "DB_TYPE": "oceanbase",
+        "DB_HOST": "<your-host>",
+        "DB_PORT": "2881",
+        "DB_USER": "<user>",
+        "DB_PASSWORD": "<password>",
+        "DB_DATABASE": "<database>",
+        "DB_CHARSET": "utf8mb4",
+        "DB_READONLY": "true",
+        "DB_MAX_ROWS": "1000"
+      }
+    },
+    "ssh-log": {
+      "type": "local",
+      "command": ["mcp-ssh-log"],
+      "environment": {
+        "SSH_LOG_CONFIG": "<config.yaml 绝对路径>"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 手动安装
+
+不想走脚本时，也可以手动操作：
+
+```bash
+# 1. 安装 npm 包
+npm i -g @ggball/mcp-database @ggball/mcp-ssh-log
+
+# 2. 下载 Skill（从 GitHub）
+mkdir -p skills/mcp-database skills/mcp-ssh-log
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-database/SKILL.md      -o skills/mcp-database/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-database/reference.md  -o skills/mcp-database/reference.md
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-ssh-log/SKILL.md       -o skills/mcp-ssh-log/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/a1667834841/mcps/main/skills/mcp-ssh-log/reference.md   -o skills/mcp-ssh-log/reference.md
+```
+
+---
 
 ## 安全提醒
 
-- `ssh_log/config.yaml` 含明文 SSH 密码，本仓库根 `.gitignore` 默认忽略不提交；你自己部署时同样要 gitignore 或放在仓库之外，通过 `SSH_LOG_CONFIG` 环境变量指向
+- `ssh_log/config.yaml` 含明文 SSH 密码，本仓库 `.gitignore` 默认忽略不提交；部署时同样要 gitignore 或放在仓库之外，通过 `SSH_LOG_CONFIG` 环境变量指向
 - 数据库 MCP 默认 `DB_READONLY=true`，如需写入请显式关闭并谨慎使用
 - 凭证请使用最小权限账户，禁止使用生产 root/sa
+
+## License
+
+MIT

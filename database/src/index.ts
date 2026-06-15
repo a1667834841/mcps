@@ -10,31 +10,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import dotenv from 'dotenv';
-import { cpSync, existsSync, mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createProvider, DatabaseProvider } from './providers/index.js';
 import { getDatabaseType, getSafetyConfig, getSensitiveConfig } from './config/index.js';
 import { validateReadOnly, injectRowLimit, redactTableSchema, redactQueryResult } from './utils/index.js';
-
-// install-skill 子命令：在初始化 MCP 或数据库之前拦截并退出。
-// 用法：mcp-database install-skill <目标目录>
-//   会把本包内的 skill/ 复制到 <目标目录>/mcp-database/
-const _argv = process.argv.slice(2);
-if (_argv[0] === 'install-skill') {
-  const targetRoot = resolve(process.cwd(), _argv[1] ?? '.');
-  const here = dirname(fileURLToPath(import.meta.url)); // dist/
-  const skillSource = resolve(here, '..', 'skill');
-  if (!existsSync(skillSource)) {
-    console.error(`[mcp-database] skill 资源未随包发布: ${skillSource}`);
-    process.exit(1);
-  }
-  const dest = resolve(targetRoot, 'mcp-database');
-  mkdirSync(dest, { recursive: true });
-  cpSync(skillSource, dest, { recursive: true });
-  console.log(`[mcp-database] skill 已安装到: ${dest}`);
-  process.exit(0);
-}
 
 // Load environment variables
 dotenv.config();

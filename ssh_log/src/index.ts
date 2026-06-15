@@ -3,32 +3,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { cpSync, existsSync, mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config/index.js';
 import { createProvider } from './providers/index.js';
 import { SSHConnectionManager, viewLog, searchLog, listLogFiles, getLatestLogFile } from './ssh/index.js';
 import type { ServerInfoProvider } from './providers/index.js';
-
-// install-skill 子命令：在加载配置、初始化 SSH 之前拦截并退出。
-// 用法：mcp-ssh-log install-skill <目标目录>
-//   会把本包内的 skill/ 复制到 <目标目录>/mcp-ssh-log/
-const _argv = process.argv.slice(2);
-if (_argv[0] === 'install-skill') {
-  const targetRoot = resolve(process.cwd(), _argv[1] ?? '.');
-  const here = dirname(fileURLToPath(import.meta.url)); // dist/
-  const skillSource = resolve(here, '..', 'skill');
-  if (!existsSync(skillSource)) {
-    console.error(`[mcp-ssh-log] skill 资源未随包发布: ${skillSource}`);
-    process.exit(1);
-  }
-  const dest = resolve(targetRoot, 'mcp-ssh-log');
-  mkdirSync(dest, { recursive: true });
-  cpSync(skillSource, dest, { recursive: true });
-  console.log(`[mcp-ssh-log] skill 已安装到: ${dest}`);
-  process.exit(0);
-}
 
 // 加载配置
 let provider: ServerInfoProvider;

@@ -9,7 +9,6 @@
     },
     "files": [
         "dist/**/*",
-        "skill/**/*",
         "README.md",
         "LICENSE"
     ],
@@ -18,13 +17,12 @@
         "dev": "tsc && node dist/index.js",
         "start": "node dist/index.js",
         "watch": "tsc --watch",
-        "sync-skill": "node scripts/sync-skill.mjs",
         "test": "npx tsx --test tests/test-*.ts",
         "test:schema": "npx tsx --test tests/test-config-schema.ts",
         "test:loader": "npx tsx --test tests/test-config-loader.ts",
         "test:provider": "npx tsx --test tests/test-provider.ts",
         "test:ssh": "npx tsx --test tests/test-ssh-commands.ts",
-        "prepublishOnly": "npm run sync-skill && npm run build"
+        "prepublishOnly": "npm run build"
     },
     "keywords": [
         "mcp",
@@ -36,9 +34,9 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/a1667834841/mcp-sqlserver.git"
+        "url": "git+https://github.com/a1667834841/mcps.git"
     },
-    "homepage": "https://github.com/a1667834841/mcp-sqlserver#readme",
+    "homepage": "https://github.com/a1667834841/mcps#readme",
     "engines": {
         "node": ">=18.0.0"
     },
