@@ -1,0 +1,71 @@
+name: Publish to npm
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'database/package.json' # 仅版本号变更时触发
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: database
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: database/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run sensitive column redaction tests
+        run: npm run test:sensitive
+
+      - name: Run SQL safety regression tests
+        run: npx tsx tests/test-sql-safety.ts
+
+  publish:
+    needs: test # 测试通过才执行发布
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: database
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: database/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check if version already exists on npm
+        id: check
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          PKG_NAME=$(node -p "require('./package.json').name")
+          if npm view "$PKG_NAME@$PKG_VERSION" version 2>/dev/null; then
+            echo "Version $PKG_VERSION already published, skipping."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Publishing $PKG_NAME@$PKG_VERSION ..."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish to npm
+        if: steps.check.outputs.exists == 'false'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
