@@ -71,6 +71,7 @@ npm start
 | `DB_REQUEST_TIMEOUT`          | 否   | `30000`                  | 请求超时（毫秒）                    |
 | `DB_ENCRYPT`                  | 否   | `true`                   | 启用加密（仅 SQL Server）           |
 | `DB_TRUST_SERVER_CERTIFICATE` | 否   | `true`                   | 信任自签证书（仅 SQL Server）       |
+| `DB_SENSITIVE_COLUMNS`          | 否   | (空，仅用内置名单)        | 敏感字段列表（逗号分隔），命中则从 `describe_table` / `execute_query` 结果中整列删除。与内置名单合并 |
 
 ### 数据库专属覆盖（可选）
 
@@ -199,6 +200,7 @@ You: 分析 Users 表的结构、索引和统计
 - 如需写入，显式设置 `DB_READONLY=false`（**谨慎使用**，建议仅在开发环境短暂开启）
 - 单次查询返回行数受 `DB_MAX_ROWS`（默认 1000）限制，超过会自动截断
 - 建议为 MCP 创建**最小权限专用账号**，禁止使用生产环境的 `root` / `sa`
+- **敏感字段脱敏**：内置常见敏感字段名单（`password` / `pwd` / `token` / `id_card` / `phone` / `email` / `bank_card` 等），命中字段时从 `describe_table` 和 `execute_query` 的返回结果中**整列删除**（字段名与数据都不出现）。通过 `DB_SENSITIVE_COLUMNS` 环境变量追加业务特有字段（逗号分隔，与内置名单合并，大小写不敏感精确匹配）。注意：匹配按**输出列名**进行，`SELECT password AS pwd` 别名查询会按别名 `pwd` 匹配
 
 ## 开发
 

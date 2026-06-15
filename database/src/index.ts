@@ -14,8 +14,8 @@ import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createProvider, DatabaseProvider } from './providers/index.js';
-import { getDatabaseType, getSafetyConfig } from './config/index.js';
-import { validateReadOnly, injectRowLimit } from './utils/index.js';
+import { getDatabaseType, getSafetyConfig, getSensitiveConfig } from './config/index.js';
+import { validateReadOnly, injectRowLimit, redactTableSchema, redactQueryResult } from './utils/index.js';
 
 // install-skill 子命令：在初始化 MCP 或数据库之前拦截并退出。
 // 用法：mcp-database install-skill <目标目录>
@@ -147,7 +147,13 @@ server.registerTool(
   },
   async ({ database, table, schema = 'dbo' }) => {
     try {
-      const tableSchema = await dbProvider.describeTable(database, table, schema);
+      let tableSchema = await dbProvider.describeTable(database, table, schema);
+
+      // Sensitive column redaction: remove hit columns entirely
+      const { enabled, matchSet } = getSensitiveConfig();
+      if (enabled) {
+        tableSchema = redactTableSchema(tableSchema, matchSet);
+      }
 
       return {
         content: [
@@ -206,7 +212,13 @@ server.registerTool(
     const limitedQuery = injectRowLimit(query, dbType, maxRows);
 
     try {
-      const result = await dbProvider.executeQuery(limitedQuery, database);
+      let result = await dbProvider.executeQuery(limitedQuery, database);
+
+      // Sensitive column redaction: remove hit columns from result
+      const { enabled, matchSet } = getSensitiveConfig();
+      if (enabled) {
+        result = redactQueryResult(result, matchSet);
+      }
 
       return {
         content: [

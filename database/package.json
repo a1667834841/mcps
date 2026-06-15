@@ -23,6 +23,7 @@
     "test:sqlserver": "npx tsx tests/test-mcp-methods-sqlserver.ts",
     "test:mysql": "npx tsx tests/test-mysql.ts",
     "test:oceanbase": "npx tsx tests/test-oceanbase.ts",
+    "test:sensitive": "npx tsx tests/test-column-redactor.ts",
     "prepublishOnly": "npm run sync-skill && npm run build",
     "version": "git add . && git commit -m \"chore: bump version to %s\"",
     "postversion": "git push --follow-tags"

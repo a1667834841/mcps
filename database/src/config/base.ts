@@ -100,3 +100,46 @@ export function getCommonConfig(): BaseDatabaseConfig {
     requestTimeout: parseInt(process.env.DB_REQUEST_TIMEOUT || '30000', 10),
   };
 }
+
+/**
+ * Built-in common sensitive column names (case-insensitive match).
+ * Covers credentials, personal privacy, and financial data naming variants.
+ */
+export const BUILTIN_SENSITIVE_COLUMNS: string[] = [
+  // 凭证
+  'password', 'passwd', 'pwd', 'secret', 'token', 'api_key', 'apikey',
+  'private_key', 'credential',
+  // 个人隐私
+  'id_card', 'idcard', 'ssn', 'mobile', 'phone', 'telephone', 'email', 'mail',
+  // 金融
+  'bank_card', 'bankcard', 'card_no', 'cardno', 'credit_card',
+];
+
+/**
+ * Sensitive column redaction configuration
+ */
+export interface SensitiveConfig {
+  enabled: boolean;
+  columns: string[];      // 合并后完整名单（原样大小写，用于日志/展示）
+  matchSet: Set<string>;  // 小写化集合，供脱敏函数 O(1) 查询
+}
+
+/**
+ * Get sensitive column config from environment + builtin list.
+ * Effective list = BUILTIN_SENSITIVE_COLUMNS ∪ DB_SENSITIVE_COLUMNS
+ */
+export function getSensitiveConfig(): SensitiveConfig {
+  const userCols = (process.env.DB_SENSITIVE_COLUMNS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const merged = [...BUILTIN_SENSITIVE_COLUMNS, ...userCols];
+  const matchSet = new Set(merged.map(c => c.toLowerCase()));
+
+  return {
+    enabled: matchSet.size > 0,
+    columns: merged,
+    matchSet,
+  };
+}
